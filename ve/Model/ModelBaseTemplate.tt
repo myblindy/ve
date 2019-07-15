@@ -1,0 +1,31 @@
+﻿<#+
+	class Field { public string Type, Name, Init; }
+	
+	Field F(string type, string name, string init = null) => new Field { Type = type, Name = name, Init = init };
+	
+	void Generate(string name, params Field[] fields)
+	{
+#>
+
+using ReactiveUI;
+using System;
+
+namespace Model {
+public class <#= name #> : ReactiveObject
+{
+	<#+ foreach(var field in fields) { #>
+    private <#= field.Type #> __<#= field.Name #> <#= string.IsNullOrWhiteSpace(field.Init) ? "" : $" = {field.Init}" #>;
+	
+    public <#= field.Type #> <#= field.Name #>
+    {
+        get => __<#= field.Name #>;
+        set => this.RaiseAndSetIfChanged(ref __<#= field.Name #>, value);
+    }
+
+<#+
+	}
+#>
+	} }
+<#+
+	} 
+#>
