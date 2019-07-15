@@ -8,11 +8,17 @@
     <Panel Height="30"/>
     <ItemsControl Items="{Binding Sections}">
       <ItemsControl.ItemsPanel>
-        <Canvas></Canvas>
+        <ItemsPanelTemplate>
+          <ScrollViewer>
+            <StackPanel Orientation="Horizontal" />
+          </ScrollViewer>
+        </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
-      <ItemsControl.Template>
-
-      </ItemsControl.Template>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border Width="{Binding Length}" Height="30" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
     </ItemsControl>
   </StackPanel>
 </UserControl>
