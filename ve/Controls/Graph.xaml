@@ -2,23 +2,43 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="ve.Controls.Graph">
-  <StackPanel Orientation="Vertical">
-    <Panel Height="30"/>
-    <ItemsControl Items="{Binding Sections}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <ScrollViewer>
-            <StackPanel Orientation="Horizontal" />
-          </ScrollViewer>
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate>
-          <Border Width="{Binding Length}" Height="30" />
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-  </StackPanel>
+             xmlns:conv="clr-namespace:ve.Converters"
+             xmlns:ctls="clr-namespace:ve.Controls"
+             mc:Ignorable="d" d:DesignWidth="800"
+             x:Class="ve.Controls.Graph" x:Name="GraphControl">
+  <UserControl.Resources>
+    <conv:SectionStartEndToSecondsWidthConverter x:Key="SectionStartEndToSecondsWidthConverter" />
+    <conv:FullPathToFileNameConverter x:Key="FullPathToFileNameConverter" />
+  </UserControl.Resources>
+
+  <DockPanel LastChildFill="True">
+    <!-- zoom bar -->
+    <Slider DockPanel.Dock="Right" Minimum="0.1" Maximum="50" Value="{Binding $parent[UserControl].Zoom}" Orientation="Vertical" />
+    
+    <StackPanel Orientation="Vertical">
+      <Panel Height="30"/>
+      <ScrollViewer>
+        <ItemsControl Items="{Binding $parent[UserControl].Sections}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <ctls:GraphSectionItem Background="{Binding BackgroundBrush}" BorderBrush="Black" Title="{Binding MediaFile.FullPath, Converter={StaticResource FullPathToFileNameConverter}}">
+                <ctls:GraphSectionItem.Width>
+                  <MultiBinding Converter="{StaticResource SectionStartEndToSecondsWidthConverter}">
+                    <Binding Path="Start" />
+                    <Binding Path="End" />
+                    <Binding Path="$parent[UserControl].Zoom" />
+                  </MultiBinding>
+                </ctls:GraphSectionItem.Width>
+              </ctls:GraphSectionItem>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </StackPanel>
+  </DockPanel>
 </UserControl>

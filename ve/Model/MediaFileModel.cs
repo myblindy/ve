@@ -4,6 +4,7 @@
 
 using ReactiveUI;
 using System;
+using Avalonia.Media;
 
 namespace Model {
 public class MediaFileModel : ReactiveObject

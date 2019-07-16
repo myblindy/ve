@@ -13,13 +13,16 @@
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Remove="Controls\Graph.xaml" />
+    <AvaloniaResource Remove="Controls\GraphSectionItem.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Controls\Graph.xaml" />
+    <None Remove="Controls\GraphSectionItem.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.8.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.8.0" />
+    <PackageReference Include="Avalonia" Version="0.8.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.8.1" />
+    <PackageReference Include="morelinq" Version="3.1.1" />
     <PackageReference Include="ReactiveUI" Version="9.19.5" />
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +55,11 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Controls\Graph.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\GraphSectionItem.xaml">
       <Generator>MSBuild:Compile</Generator>
     </EmbeddedResource>
   </ItemGroup>

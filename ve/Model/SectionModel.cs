@@ -4,6 +4,7 @@
 
 using ReactiveUI;
 using System;
+using Avalonia.Media;
 
 namespace Model {
 public class SectionModel : ReactiveObject
@@ -30,6 +31,14 @@ public class SectionModel : ReactiveObject
     {
         get => __End;
         set => this.RaiseAndSetIfChanged(ref __End, value);
+    }
+
+    private Brush __BackgroundBrush ;
+	
+    public Brush BackgroundBrush
+    {
+        get => __BackgroundBrush;
+        set => this.RaiseAndSetIfChanged(ref __BackgroundBrush, value);
     }
 
 	} }

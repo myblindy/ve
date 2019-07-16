@@ -8,12 +8,24 @@ namespace ve.Controls
 {
     public class Graph : UserControl
     {
-        public ObservableCollection<SectionModel> Sections { get; }
+        public static readonly AvaloniaProperty<ObservableCollection<SectionModel>> SectionsProperty =
+            AvaloniaProperty.Register<Graph, ObservableCollection<SectionModel>>("Sections");
+        public ObservableCollection<SectionModel> Sections
+        {
+            get => GetValue(SectionsProperty);
+            set => SetValue(SectionsProperty, value);
+        }
+
+        public static readonly AvaloniaProperty<double> ZoomProperty = AvaloniaProperty.Register<Graph, double>("Zoom", 1.0 / 50);
+        public double Zoom
+        {
+            get => GetValue(ZoomProperty);
+            set => SetValue(ZoomProperty, value);
+        }
 
         public Graph()
         {
             this.InitializeComponent();
-            DataContext = this;
         }
 
         private void InitializeComponent()
