@@ -6,17 +6,21 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ve.MainWindow"
         Title="Video Editor">
-  <Grid ColumnDefinitions="auto, *" RowDefinitions="*, auto">
+  <DockPanel LastChildFill="True">
+
+    <!-- toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+      <Button Command="">Add Media</Button>
+    </StackPanel>
+
+    <!-- graph -->
+    <ctls:Graph DockPanel.Dock="Bottom" Background="LightBlue" Sections="{Binding Sections}" />
 
     <!-- bar -->
-    <Panel Grid.Row="0" Grid.Column="0" Background="LightGray" Width="200" />
+    <Panel DockPanel.Dock="Left" Background="LightGray" Width="200" />
 
     <!-- video panel -->
     <Panel Grid.Row="0" Grid.Column="1" Background="LightGreen" />
-
-    <!-- graph -->
-    <ctls:Graph Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="LightBlue"
-                Sections="{Binding Sections}" />
-
-  </Grid>
+    
+  </DockPanel>
 </Window>

@@ -16,7 +16,7 @@ namespace ve.Controls
             set => SetValue(SectionsProperty, value);
         }
 
-        public static readonly AvaloniaProperty<double> ZoomProperty = AvaloniaProperty.Register<Graph, double>("Zoom", 1.0 / 50);
+        public static readonly AvaloniaProperty<double> ZoomProperty = AvaloniaProperty.Register<Graph, double>("Zoom", 50);
         public double Zoom
         {
             get => GetValue(ZoomProperty);
