@@ -9,5 +9,4 @@
 <#@ include file="modelbasetemplate.tt" #>
 
 <# Generate("MediaFileModel", 
-	F("string", "FullPath"),
-	F("TimeSpan", "Length"));  #>
+	F("ve.FFmpeg.Support.FFmpegVideoStreamDecoder", "Decoder"));  #>

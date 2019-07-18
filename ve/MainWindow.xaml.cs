@@ -5,7 +5,10 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Model;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using ve.FFmpeg.Support;
 
 namespace ve
 {
@@ -17,19 +20,14 @@ namespace ve
             public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();
         }
 
+        MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
+
         public MainWindow()
         {
-            InitializeComponent();
+            FFmpegSetup.Initialize();
 
-            var model = new MainWindowViewModel();
-            model.Sections.Add(new SectionModel
-            {
-                Start = TimeSpan.Zero,
-                End = TimeSpan.FromSeconds(25.5),
-                BackgroundBrush = new SolidColorBrush(Color.FromRgb(50, 150, 100)),
-                MediaFile = new MediaFileModel { FullPath = @"c:\stuff\file.mp4" },
-            });
-            DataContext = model;
+            InitializeComponent();
+            DataContext = new MainWindowViewModel();
 
 #if DEBUG
             this.AttachDevTools();
@@ -39,6 +37,29 @@ namespace ve
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
+        }
+
+        public async void AddMediaFile()
+        {
+            var dlg = new OpenFileDialog
+            {
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "Video Files", Extensions = new List<string> {"avi", "mkv", "mp4",  "mpg" } },
+                    new FileDialogFilter { Name = "Image Files", Extensions = new List<string> {"jpg", "jpeg", "gif", "png", "bmp" } },
+                    new FileDialogFilter { Name = "All Files", Extensions = new List<string> { "*" } }
+                }
+            };
+
+            var files = await dlg.ShowAsync(this);
+
+            if (files.Any())
+            {
+                ViewModel.MediaFiles.Add(new MediaFileModel
+                {
+                    Decoder = new FFmpegVideoStreamDecoder(files[0])
+                });
+            }
         }
     }
 }

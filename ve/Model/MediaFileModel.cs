@@ -9,20 +9,12 @@ using Avalonia.Media;
 namespace Model {
 public class MediaFileModel : ReactiveObject
 {
-	    private string __FullPath ;
+	    private ve.FFmpeg.Support.FFmpegVideoStreamDecoder __Decoder ;
 	
-    public string FullPath
+    public ve.FFmpeg.Support.FFmpegVideoStreamDecoder Decoder
     {
-        get => __FullPath;
-        set => this.RaiseAndSetIfChanged(ref __FullPath, value);
-    }
-
-    private TimeSpan __Length ;
-	
-    public TimeSpan Length
-    {
-        get => __Length;
-        set => this.RaiseAndSetIfChanged(ref __Length, value);
+        get => __Decoder;
+        set => this.RaiseAndSetIfChanged(ref __Decoder, value);
     }
 
 	} }

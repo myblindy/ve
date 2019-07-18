@@ -10,7 +10,7 @@
 
     <!-- toolbar -->
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-      <Button Command="">Add Media</Button>
+      <Button Command="{Binding $parent[Window].AddMediaFile}">Add Media</Button>
     </StackPanel>
 
     <!-- graph -->
