@@ -17,10 +17,12 @@
   <ItemGroup>
     <AvaloniaResource Remove="Controls\Graph.xaml" />
     <AvaloniaResource Remove="Controls\GraphSectionItem.xaml" />
+    <AvaloniaResource Remove="Controls\GraphTimePanel.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Controls\Graph.xaml" />
     <None Remove="Controls\GraphSectionItem.xaml" />
+    <None Remove="Controls\GraphTimePanel.xaml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.8.1" />
@@ -64,6 +66,11 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Controls\GraphSectionItem.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\GraphTimePanel.xaml">
       <Generator>MSBuild:Compile</Generator>
     </EmbeddedResource>
   </ItemGroup>

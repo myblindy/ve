@@ -13,12 +13,13 @@
 
   <DockPanel LastChildFill="True">
     <!-- zoom bar -->
-    <Slider DockPanel.Dock="Right" Minimum="0.05" Maximum="100" Value="{Binding $parent[UserControl].Zoom}" Orientation="Vertical" 
+    <Slider DockPanel.Dock="Right" Minimum="0.05" Maximum="100" Value="{Binding $parent[UserControl].Zoom}" Orientation="Vertical"
             ToolTip.Tip="Zoom level" />
-    
-    <StackPanel Orientation="Vertical">
-      <Panel Height="30"/>
-      <ScrollViewer>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
+      <StackPanel Orientation="Vertical">
+        <ctls:GraphTimePanel>
+        </ctls:GraphTimePanel>
         <ItemsControl Items="{Binding $parent[UserControl].Sections}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -27,7 +28,8 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <ctls:GraphSectionItem Background="{Binding BackgroundBrush}" BorderBrush="Black" Title="{Binding MediaFile.FullPath, Converter={StaticResource FullPathToFileNameConverter}}">
+              <ctls:GraphSectionItem Background="{Binding BackgroundBrush}" BorderBrush="Black" BorderThickness="1"
+                                     Title="{Binding MediaFile.Decoder.FilePath, Converter={StaticResource FullPathToFileNameConverter}}">
                 <ctls:GraphSectionItem.Width>
                   <MultiBinding Converter="{StaticResource SectionStartEndToSecondsWidthConverter}">
                     <Binding Path="Start" />
@@ -39,7 +41,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-      </ScrollViewer>
-    </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
   </DockPanel>
 </UserControl>

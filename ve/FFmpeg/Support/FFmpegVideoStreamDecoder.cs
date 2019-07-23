@@ -1,6 +1,7 @@
 ﻿using FFmpeg.AutoGen;
 using ReactiveUI;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,9 +24,7 @@ namespace ve.FFmpeg.Support
 
         public FFmpegAudioStream AudioStream { get; }
 
-        public double LengthSeconds => Math.Max(
-            VideoStream is null || VideoStream.Stream == null ? 0 : VideoStream.Stream->duration / (double)ffmpeg.AV_TIME_BASE,
-            AudioStream is null || AudioStream.Stream == null ? 0 : AudioStream.Stream->duration / (double)ffmpeg.AV_TIME_BASE);
+        public double LengthSeconds => FormatContextPointer->duration / (double)ffmpeg.AV_TIME_BASE;
 
         public FFmpegVideoStreamDecoder(string filePath)
         {
@@ -41,7 +40,7 @@ namespace ve.FFmpeg.Support
                 switch (FormatContextPointer->streams[idx]->codec->codec_type)
                 {
                     case AVMediaType.AVMEDIA_TYPE_VIDEO:
-                        if (VideoStream is null)
+                        if (VideoStream.Stream is null)
                             VideoStream = new FFmpegVideoStream
                             {
                                 Stream = FormatContextPointer->streams[idx],
@@ -49,7 +48,7 @@ namespace ve.FFmpeg.Support
                             };
                         break;
                     case AVMediaType.AVMEDIA_TYPE_AUDIO:
-                        if (AudioStream is null)
+                        if (AudioStream.Stream is null)
                             AudioStream = new FFmpegAudioStream
                             {
                                 Stream = FormatContextPointer->streams[idx]
@@ -57,9 +56,11 @@ namespace ve.FFmpeg.Support
                         break;
                 }
 
-            VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}" };
+            VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}", IsBackground = true };
             VideoThread.Start();
         }
+
+        private readonly ConcurrentQueue<FFmpegPacketWrapper> VideoPacketQueue = new ConcurrentQueue<FFmpegPacketWrapper>();
 
         private void VideoThreadProc(object obj)
         {
@@ -76,9 +77,7 @@ namespace ve.FFmpeg.Support
                 }
 
                 if (VideoPacketPointer->stream_index == VideoStream.Stream->index)
-                {
-
-                }
+                    VideoPacketQueue.Enqueue(new FFmpegPacketWrapper { Packet = VideoPacketPointer });
             }
         }
 
@@ -120,9 +119,9 @@ namespace ve.FFmpeg.Support
                 ffmpeg.av_packet_unref(VideoPacketPointer);
                 ffmpeg.av_free(VideoPacketPointer);
 
-                if (VideoStream != null)
+                if (VideoStream.Stream != null)
                     ffmpeg.avcodec_close(VideoStream.Stream->codec);
-                if (AudioStream != null)
+                if (AudioStream.Stream != null)
                     ffmpeg.avcodec_close(AudioStream.Stream->codec);
 
                 fixed (AVFormatContext** FormatContextPP = &FormatContextPointer)
@@ -145,14 +144,19 @@ namespace ve.FFmpeg.Support
         #endregion
     }
 
-    public unsafe class FFmpegVideoStream
+    public unsafe struct FFmpegVideoStream
     {
         internal AVStream* Stream;
         internal AVCodec* Codec;
     }
 
-    public unsafe class FFmpegAudioStream
+    public unsafe struct FFmpegAudioStream
     {
         internal AVStream* Stream;
+    }
+
+    public unsafe struct FFmpegPacketWrapper
+    {
+        internal AVPacket* Packet;
     }
 }
