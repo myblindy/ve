@@ -5,7 +5,7 @@
              mc:Ignorable="d" d:DesignWidth="800" 
              Height="30"
              x:Class="ve.Controls.GraphTimePanel">
-  <ItemsControl Items="{Binding $parent[UserControl].Ticks">
+  <ItemsControl Items="{Binding $parent[UserControl].Ticks}">
     
   </ItemsControl>
 </UserControl>
