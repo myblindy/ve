@@ -28,7 +28,7 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <ctls:GraphSectionItem Background="{Binding BackgroundBrush}" BorderBrush="Black" BorderThickness="1"
+              <ctls:GraphSectionItem Background="{Binding MediaFile.BackgroundBrush}" BorderBrush="Black" BorderThickness="1"
                                      Title="{Binding MediaFile.Decoder.FilePath, Converter={StaticResource FullPathToFileNameConverter}}">
                 <ctls:GraphSectionItem.Width>
                   <MultiBinding Converter="{StaticResource SectionStartEndToSecondsWidthConverter}">

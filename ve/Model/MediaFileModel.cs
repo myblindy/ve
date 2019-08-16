@@ -17,4 +17,12 @@ public class MediaFileModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref __Decoder, value);
     }
 
+    private Brush __BackgroundBrush ;
+	
+    public Brush BackgroundBrush
+    {
+        get => __BackgroundBrush;
+        set => this.RaiseAndSetIfChanged(ref __BackgroundBrush, value);
+    }
+
 	} }

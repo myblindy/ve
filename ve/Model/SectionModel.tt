@@ -11,5 +11,4 @@
 <# Generate("SectionModel", 
 	F("MediaFileModel", "MediaFile"),
 	F("TimeSpan", "Start"),
-	F("TimeSpan", "End"),
-	F("Brush", "BackgroundBrush"));  #>
+	F("TimeSpan", "End"));  #>

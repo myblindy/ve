@@ -33,12 +33,4 @@ public class SectionModel : ReactiveObject
         set => this.RaiseAndSetIfChanged(ref __End, value);
     }
 
-    private Brush __BackgroundBrush ;
-	
-    public Brush BackgroundBrush
-    {
-        get => __BackgroundBrush;
-        set => this.RaiseAndSetIfChanged(ref __BackgroundBrush, value);
-    }
-
 	} }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -45,6 +46,7 @@ namespace ve.FFmpeg.Support
                             {
                                 Stream = FormatContextPointer->streams[idx],
                                 Codec = ffmpeg.avcodec_find_decoder(FormatContextPointer->streams[idx]->codec->codec_id),
+                                FrameSize = new Size(FormatContextPointer->streams[idx]->codecpar->width, FormatContextPointer->streams[idx]->codecpar->height),
                             };
                         break;
                     case AVMediaType.AVMEDIA_TYPE_AUDIO:
@@ -57,7 +59,7 @@ namespace ve.FFmpeg.Support
                 }
 
             VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}", IsBackground = true };
-            VideoThread.Start();
+            //VideoThread.Start();
         }
 
         private readonly ConcurrentQueue<FFmpegPacketWrapper> VideoPacketQueue = new ConcurrentQueue<FFmpegPacketWrapper>();
@@ -144,10 +146,11 @@ namespace ve.FFmpeg.Support
         #endregion
     }
 
-    public unsafe struct FFmpegVideoStream
+    public unsafe struct FFmpegVideoStream 
     {
         internal AVStream* Stream;
         internal AVCodec* Codec;
+        internal Size FrameSize;
     }
 
     public unsafe struct FFmpegAudioStream

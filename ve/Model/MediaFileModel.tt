@@ -9,4 +9,5 @@
 <#@ include file="modelbasetemplate.tt" #>
 
 <# Generate("MediaFileModel", 
-	F("ve.FFmpeg.Support.FFmpegVideoStreamDecoder", "Decoder"));  #>
+	F("ve.FFmpeg.Support.FFmpegVideoStreamDecoder", "Decoder"),
+	F("Brush", "BackgroundBrush"));  #>

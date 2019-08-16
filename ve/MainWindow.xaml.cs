@@ -14,22 +14,6 @@ namespace ve
 {
     public class MainWindow : Window
     {
-        public class MainWindowViewModel
-        {
-            public ObservableCollection<MediaFileModel> MediaFiles { get; } = new ObservableCollection<MediaFileModel>();
-            public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();
-
-            private readonly Random Random = new Random();
-            public void AddSection(MediaFileModel mf) =>
-                Sections.Add(new SectionModel
-                {
-                    MediaFile = mf,
-                    Start = TimeSpan.Zero,
-                    End = TimeSpan.FromSeconds(mf.Decoder.LengthSeconds),
-                    BackgroundBrush = new SolidColorBrush((uint)Random.Next(int.MaxValue))
-                });
-        }
-
         MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
 
         public MainWindow()
@@ -67,12 +51,29 @@ namespace ve
             {
                 var mf = new MediaFileModel
                 {
-                    Decoder = new FFmpegVideoStreamDecoder(files[0])
+                    Decoder = new FFmpegVideoStreamDecoder(files[0]),
+                    BackgroundBrush = new SolidColorBrush(((uint)ViewModel.Random.Next(int.MaxValue)) & 0x00FFFFFF | 0xFF000000)
                 };
 
                 ViewModel.MediaFiles.Add(mf);
                 ViewModel.AddSection(mf);
             }
         }
+    }
+
+    public class MainWindowViewModel
+    {
+        public ObservableCollection<MediaFileModel> MediaFiles { get; } = new ObservableCollection<MediaFileModel>();
+        public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();
+
+        internal readonly Random Random = new Random();
+
+        public void AddSection(MediaFileModel mf) =>
+            Sections.Add(new SectionModel
+            {
+                MediaFile = mf,
+                Start = TimeSpan.Zero,
+                End = TimeSpan.FromSeconds(mf.Decoder.LengthSeconds)
+            });
     }
 }
