@@ -39,13 +39,13 @@ namespace ve.FFmpeg
                 ovstream->codec->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
 
             // start decoding the input frames
-            foreach(var section in vm.Sections)
+            foreach (var mf in vm.MediaFiles)
             {
-                var ivstreamw = section.MediaFile.Decoder.VideoStream;
+                var ivstreamw = mf.Decoder.VideoStream;
 
-                var iframe = ffmpeg.av_frame_alloc();
-                AVPicture opicture;
-                ffmpeg.av_image_alloc(&opicture, ovstream->codec->pix_fmt, framesize.Width, framesize.Height);
+                byte_ptrArray4 iSrcData;
+                int_array4 iSrcLines;
+                ffmpeg.av_image_alloc(ref iSrcData, ref iSrcLines, framesize.Width, framesize.Height, ovstream->codec->pix_fmt, 16);
             }
         }
 
