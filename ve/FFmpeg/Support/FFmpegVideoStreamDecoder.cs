@@ -15,9 +15,9 @@ namespace ve.FFmpeg.Support
     {
         public string FilePath { get; }
 
-        private readonly AVFormatContext* FormatContextPointer = ffmpeg.avformat_alloc_context();
-        private readonly AVFrame* FramePointer = ffmpeg.av_frame_alloc();
-        private readonly AVPacket* VideoPacketPointer = ffmpeg.av_packet_alloc();
+        public AVFormatContext* FormatContextPointer { get; private set; } = ffmpeg.avformat_alloc_context();
+        public AVFrame* FramePointer { get; private set; } = ffmpeg.av_frame_alloc();
+        public AVPacket* VideoPacketPointer { get; private set; } = ffmpeg.av_packet_alloc();
 
         private readonly Thread VideoThread;
 
@@ -32,8 +32,11 @@ namespace ve.FFmpeg.Support
             FilePath = filePath;
 
             // open the file
-            fixed (AVFormatContext** FormatContextPP = &FormatContextPointer)
-                ffmpeg.avformat_open_input(FormatContextPP, filePath, null, null).ThrowExceptionIfFFmpegError();
+            {
+                var fc = FormatContextPointer;
+                ffmpeg.avformat_open_input(&fc, filePath, null, null).ThrowExceptionIfFFmpegError();
+                FormatContextPointer = fc;
+            }
             ffmpeg.avformat_find_stream_info(FormatContextPointer, null).ThrowExceptionIfFFmpegError();
 
             // find useful streams
@@ -126,8 +129,11 @@ namespace ve.FFmpeg.Support
                 if (AudioStream.Stream != null)
                     ffmpeg.avcodec_close(AudioStream.Stream->codec);
 
-                fixed (AVFormatContext** FormatContextPP = &FormatContextPointer)
-                    ffmpeg.avformat_close_input(FormatContextPP);
+                {
+                    var fc = FormatContextPointer;
+                    ffmpeg.avformat_close_input(&fc);
+                    FormatContextPointer = fc;
+                }
 
                 disposedValue = true;
             }
@@ -146,7 +152,7 @@ namespace ve.FFmpeg.Support
         #endregion
     }
 
-    public unsafe struct FFmpegVideoStream 
+    public unsafe struct FFmpegVideoStream
     {
         internal AVStream* Stream;
         internal AVCodec* Codec;

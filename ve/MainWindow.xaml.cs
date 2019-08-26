@@ -4,10 +4,12 @@ using Avalonia.Diagnostics.ViewModels;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Model;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using ve.FFmpeg;
 using ve.FFmpeg.Support;
 
 namespace ve
@@ -19,6 +21,14 @@ namespace ve
         public MainWindow()
         {
             FFmpegSetup.Initialize();
+
+            // test
+            var vm = new MainWindowViewModel();
+            var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"C:\stuff\kittens.mp4") };
+            vm.MediaFiles.Add(mf);
+            vm.AddSection(mf);
+            OutputRenderer.Start(vm, @"c:\stuff\temp.mp4", 6000);
+            Environment.Exit(0);
 
             InitializeComponent();
             DataContext = new MainWindowViewModel();
@@ -61,7 +71,7 @@ namespace ve
         }
     }
 
-    public class MainWindowViewModel
+    public class MainWindowViewModel : ReactiveObject
     {
         public ObservableCollection<MediaFileModel> MediaFiles { get; } = new ObservableCollection<MediaFileModel>();
         public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();

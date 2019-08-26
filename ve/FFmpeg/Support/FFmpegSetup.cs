@@ -20,6 +20,7 @@ namespace ve.FFmpeg.Support
                 {
                     Console.WriteLine($"FFmpeg binaries found in: {ffmpegBinaryPath}");
                     ffmpeg.RootPath = ffmpegBinaryPath;
+
                     return;
                 }
 
