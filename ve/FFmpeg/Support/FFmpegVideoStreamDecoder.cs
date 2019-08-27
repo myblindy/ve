@@ -45,12 +45,22 @@ namespace ve.FFmpeg.Support
                 {
                     case AVMediaType.AVMEDIA_TYPE_VIDEO:
                         if (VideoStream.Stream is null)
-                            VideoStream = new FFmpegVideoStream
+                        {
+                            var vs = new FFmpegVideoStream
                             {
                                 Stream = FormatContextPointer->streams[idx],
-                                Codec = ffmpeg.avcodec_find_decoder(FormatContextPointer->streams[idx]->codec->codec_id),
+                                DecoderCodec = ffmpeg.avcodec_find_decoder(FormatContextPointer->streams[idx]->codec->codec_id),
                                 FrameSize = new Size(FormatContextPointer->streams[idx]->codecpar->width, FormatContextPointer->streams[idx]->codecpar->height),
                             };
+
+                            // decoder context
+                            vs.DecoderCodecContext = ffmpeg.avcodec_alloc_context3(vs.DecoderCodec);
+                            ffmpeg.avcodec_parameters_to_context(vs.DecoderCodecContext, vs.Stream->codecpar).ThrowExceptionIfFFmpegError();
+                            vs.DecoderCodecContext->framerate = ffmpeg.av_guess_frame_rate(FormatContextPointer, vs.Stream, null);
+                            ffmpeg.avcodec_open2(vs.DecoderCodecContext, vs.DecoderCodec, null).ThrowExceptionIfFFmpegError();
+
+                            VideoStream = vs;
+                        }
                         break;
                     case AVMediaType.AVMEDIA_TYPE_AUDIO:
                         if (AudioStream.Stream is null)
@@ -155,7 +165,8 @@ namespace ve.FFmpeg.Support
     public unsafe struct FFmpegVideoStream
     {
         internal AVStream* Stream;
-        internal AVCodec* Codec;
+        internal AVCodec* DecoderCodec;
+        internal AVCodecContext* DecoderCodecContext;
         internal Size FrameSize;
     }
 

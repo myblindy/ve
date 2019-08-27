@@ -44,5 +44,12 @@ namespace ve.FFmpeg.Support
             if (error < 0) throw new ApplicationException(av_strerror(error));
             return error;
         }
+
+        public static readonly int AVERROR_EAGAIN = ffmpeg.AVERROR(ffmpeg.EAGAIN);
+        public static int ThrowExceptionIfFFmpegErrorOtherThanAgainEof(this int error)
+        {
+            if (error < 0 && error != ffmpeg.AVERROR_EOF && error != AVERROR_EAGAIN) throw new ApplicationException(av_strerror(error));
+            return error;
+        }
     }
 }
