@@ -1,0 +1,98 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+
+<#
+	var fields = new (string type, string alloc, string free, bool ptrfree)[] 
+	{ 
+		("AVPacket", "ffmpeg.av_packet_alloc", "ffmpeg.av_packet_free", true), 
+		("AVFrame", "ffmpeg.av_frame_alloc", "ffmpeg.av_frame_free", true), 
+		("AVFormatContext", null, "ffmpeg.avformat_free_context", false), 
+	};
+#>
+
+using FFmpeg.AutoGen;
+using System;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+
+<# foreach(var field in fields) { #>
+public class Safe<#= field.type #> : SafeHandle
+{
+<# if(string.IsNullOrWhiteSpace(field.alloc)) { #>
+	public Safe<#= field.type #>(IntPtr handle): base(IntPtr.Zero, true) =>
+		SetHandle(handle);
+
+    public unsafe delegate void InitDelegate(<#= field.type #> **ptr);
+	public unsafe Safe<#= field.type #>(InitDelegate init): base(IntPtr.Zero, true)
+	{
+		<#= field.type #> *ptr = default;
+		init(&ptr);
+		SetHandle(new IntPtr(ptr));
+	}
+<# } else { #>
+	public unsafe Safe<#= field.type #>(): base(IntPtr.Zero, true) => SetHandle(new IntPtr(<#= field.alloc #>()));
+<# } #>
+
+    public override bool IsInvalid => handle == IntPtr.Zero;
+
+	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+	unsafe protected override bool ReleaseHandle()
+	{
+		var ptr = (<#= field.type #> *)handle.ToPointer();
+		<#= field.free #>(<#= field.ptrfree ? "&" : "" #>ptr);
+		SetHandle(IntPtr.Zero);
+		return true;
+	}
+
+	unsafe public <#= field.type #> *Pointer =>
+		(<#= field.type #> *)handle;
+}
+
+<# } #>
+
+// avdict safe wrapper
+public class SafeAVDictionary : SafeHandle
+{
+    unsafe public SafeAVDictionary() : base(IntPtr.Zero, true)
+    {
+		AVDictionary *dict;
+
+		// work around to allocate this thing
+		ffmpeg.av_dict_set(&dict, "key", "val", 0);
+		ffmpeg.av_dict_get(dict, "", null, ffmpeg.AV_DICT_IGNORE_SUFFIX);
+
+		SetHandle(new IntPtr(dict));
+    }
+
+    public override bool IsInvalid => handle == IntPtr.Zero;
+	unsafe public AVDictionary *Pointer => (AVDictionary *)handle;
+
+	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+	unsafe protected override bool ReleaseHandle()
+	{
+		var dict = (AVDictionary *)handle.ToPointer();
+
+		// remove any values still in
+		//AVDictionaryEntry *t = default;
+		//while((t = ffmpeg.av_dict_get(dict, "", t, ffmpeg.AV_DICT_IGNORE_SUFFIX)) != null)
+		//{
+		//}
+
+		ffmpeg.av_dict_free(&dict);
+		SetHandle(IntPtr.Zero);
+
+		return true;
+	}
+
+    unsafe public void Set(string key, string val, int flags = 0)
+    {
+        var dict = (AVDictionary*)handle;
+        ffmpeg.av_dict_set(&dict, key, val, flags);
+        SetHandle(new IntPtr(dict));
+    }
+}

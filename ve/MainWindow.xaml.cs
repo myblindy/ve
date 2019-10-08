@@ -24,10 +24,10 @@ namespace ve
 
             // test
             var vm = new MainWindowViewModel();
-            var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"C:\stuff\kittens.mp4") };
+            var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"Z:\Marius\cp_loading_icon.mp4") };
             vm.MediaFiles.Add(mf);
-            vm.AddSection(mf);
-            OutputRenderer.Start(vm, @"c:\stuff\temp.mp4", 6000);
+            vm.AddSection(mf, TimeSpan.FromSeconds(5));
+            OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22);
             Environment.Exit(0);
 
             InitializeComponent();
@@ -78,12 +78,12 @@ namespace ve
 
         internal readonly Random Random = new Random();
 
-        public void AddSection(MediaFileModel mf) =>
+        public void AddSection(MediaFileModel mf, TimeSpan start = default, TimeSpan end = default) =>
             Sections.Add(new SectionModel
             {
                 MediaFile = mf,
-                Start = TimeSpan.Zero,
-                End = TimeSpan.FromSeconds(mf.Decoder.LengthSeconds)
+                Start = TimeSpan.FromSeconds(Math.Min(start.TotalSeconds, mf.Decoder.LengthSeconds)),
+                End = TimeSpan.FromSeconds(Math.Min(mf.Decoder.LengthSeconds, end.TotalSeconds)),
             });
     }
 }

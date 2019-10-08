@@ -16,8 +16,8 @@ namespace ve.FFmpeg.Support
         public string FilePath { get; }
 
         public AVFormatContext* FormatContextPointer { get; private set; } = ffmpeg.avformat_alloc_context();
-        public AVFrame* FramePointer { get; private set; } = ffmpeg.av_frame_alloc();
-        public AVPacket* VideoPacketPointer { get; private set; } = ffmpeg.av_packet_alloc();
+        private AVFrame* FramePointer { get; set; } = ffmpeg.av_frame_alloc();
+        private AVPacket* VideoPacketPointer { get; set; } = ffmpeg.av_packet_alloc();
 
         private readonly Thread VideoThread;
 

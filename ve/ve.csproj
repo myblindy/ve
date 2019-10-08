@@ -50,6 +50,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>SectionModel.cs</LastGenOutput>
     </None>
+    <None Update="Support\PointerWrappers.tt">
+      <LastGenOutput>PointerWrappers.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
@@ -67,6 +71,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>MediaFileModel.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Support\PointerWrappers.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PointerWrappers.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
