@@ -159,6 +159,21 @@ namespace ve.FFmpeg
                 var data = extramfdata[mf];
                 var decoder = mf.Decoder;
 
+                // seek to start cut
+                var tsdelta = ffmpeg.av_rescale_q((long)(section.Start.TotalSeconds * ffmpeg.AV_TIME_BASE), ffmpeg.av_get_time_base_q(), decoder.VideoStream.Stream->time_base);
+                if (section.Start != TimeSpan.Zero)
+                {
+                    // seek for the last keyframe before my target timestamp
+                    ffmpeg.avformat_seek_file(decoder.FormatContextPointer, -1, long.MinValue, tsdelta, tsdelta, ffmpeg.AVSEEK_FLAG_BACKWARD).ThrowExceptionIfFFmpegError();
+                    ffmpeg.avcodec_flush_buffers(decoder.VideoStream.DecoderCodecContext);
+
+                    // fast forward until the expected timestamp
+                    do
+                    {
+                        ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegError();
+                    } while (packet.Pointer->pts < tsdelta);
+                }
+
                 var encoderThread = new Thread(() =>
                 {
                     using var encPacket = new SafeAVPacket();
@@ -200,7 +215,7 @@ namespace ve.FFmpeg
                                 else
                                     continue;
 
-                            frame.Pointer->pts = frame.Pointer->best_effort_timestamp;
+                            frame.Pointer->pts = frame.Pointer->best_effort_timestamp - tsdelta;
 
                             // push the decoded frame in the graph
                             ffmpeg.av_buffersrc_write_frame(data.BufferSourceContext, frame.Pointer).ThrowExceptionIfFFmpegError();
@@ -225,12 +240,6 @@ namespace ve.FFmpeg
                 })
                 { Name = "Decoder Thread" };
                 decoderThread.Start();
-
-                // seek to beginning
-                if (section.Start != TimeSpan.Zero)
-                    ffmpeg.av_seek_frame(decoder.FormatContextPointer, decoder.VideoStream.Stream->index,
-                        ffmpeg.av_rescale_q((long)(section.Start.TotalSeconds * ffmpeg.AV_TIME_BASE), ffmpeg.av_get_time_base_q(), decoder.VideoStream.Stream->time_base),
-                        ffmpeg.AVSEEK_FLAG_ANY).ThrowExceptionIfFFmpegError();
 
                 while (true)
                 {

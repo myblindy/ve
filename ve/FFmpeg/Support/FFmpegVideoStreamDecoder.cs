@@ -61,6 +61,8 @@ namespace ve.FFmpeg.Support
 
                             VideoStream = vs;
                         }
+                        else
+                            FormatContextPointer->streams[idx]->discard = AVDiscard.AVDISCARD_ALL;
                         break;
                     case AVMediaType.AVMEDIA_TYPE_AUDIO:
                         if (AudioStream.Stream is null)
@@ -68,6 +70,8 @@ namespace ve.FFmpeg.Support
                             {
                                 Stream = FormatContextPointer->streams[idx]
                             };
+                        else
+                            FormatContextPointer->streams[idx]->discard = AVDiscard.AVDISCARD_ALL;
                         break;
                 }
 
