@@ -160,30 +160,9 @@ namespace ve.FFmpeg
                 var decoder = mf.Decoder;
 
                 // seek to start cut
-                var tsdelta = ffmpeg.av_rescale((long)(section.Start.TotalSeconds * ffmpeg.AV_TIME_BASE), 
-                    decoder.VideoStream.Stream->time_base.den, decoder.VideoStream.Stream->time_base.num * ffmpeg.AV_TIME_BASE);
-                var tsdeltaMinus1 = tsdelta - ffmpeg.av_rescale((long)(framerate.den * ffmpeg.AV_TIME_BASE / framerate.num), 
-                    decoder.VideoStream.Stream->time_base.den, decoder.VideoStream.Stream->time_base.num * ffmpeg.AV_TIME_BASE);
-
-                if (section.Start != TimeSpan.Zero)
-                {
-                    // seek for the last keyframe before my target timestamp
-                    ffmpeg.avformat_seek_file(decoder.FormatContextPointer, -1, long.MinValue, tsdelta, tsdelta, ffmpeg.AVSEEK_FLAG_BACKWARD).ThrowExceptionIfFFmpegError();
-                    ffmpeg.avcodec_flush_buffers(decoder.VideoStream.DecoderCodecContext);
-
-                    // fast forward until the expected timestamp
-                    do
-                    {
-                        ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegError();
-                        if (packet.Pointer->stream_index != decoder.VideoStream.Stream->index)
-                            continue;
-
-                        ffmpeg.avcodec_send_packet(decoder.VideoStream.DecoderCodecContext, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
-                        ffmpeg.av_packet_unref(packet.Pointer);
-                        if (ffmpeg.avcodec_receive_frame(decoder.VideoStream.DecoderCodecContext, frame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof() == FFmpegSetup.AVERROR_EAGAIN)
-                            continue;
-                    } while (frame.Pointer->pkt_dts < tsdeltaMinus1);
-                }
+                var cutStartTs = FFmpegUtilities.PreciseSeek(section.Start, decoder.FormatContextPointer, decoder.VideoStream.DecoderCodecContext, decoder.VideoStream.Stream);
+                var cutEndTs = FFmpegUtilities.GetTimestamp(section.End, decoder.VideoStream.Stream);
+                bool reachedCutEnd = false;
 
                 var encoderThread = new Thread(() =>
                 {
@@ -200,7 +179,7 @@ namespace ve.FFmpeg
                             if (++frames % 50 == 0)
                                 Console.Write('.');
                         }
-                        else if (ret == ffmpeg.AVERROR_EOF)
+                        else if (reachedCutEnd || ret == ffmpeg.AVERROR_EOF)
                             break;
                     }
                 })
@@ -226,7 +205,13 @@ namespace ve.FFmpeg
                                 else
                                     continue;
 
-                            frame.Pointer->pts = frame.Pointer->best_effort_timestamp - tsdelta;
+                            if (frame.Pointer->best_effort_timestamp > cutEndTs)
+                            {
+                                reachedCutEnd = true;
+                                return;
+                            }
+
+                            frame.Pointer->pts = frame.Pointer->best_effort_timestamp - cutStartTs;
 
                             // push the decoded frame in the graph
                             ffmpeg.av_buffersrc_write_frame(data.BufferSourceContext, frame.Pointer).ThrowExceptionIfFFmpegError();
@@ -255,7 +240,7 @@ namespace ve.FFmpeg
                 while (true)
                 {
                     // eof?
-                    if (ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof()
+                    if (reachedCutEnd || ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof()
                         == ffmpeg.AVERROR_EOF)
                     {
                         // enter drain mode
@@ -265,7 +250,7 @@ namespace ve.FFmpeg
 
                     // my stream?
                     if (packet.Pointer->stream_index == decoder.VideoStream.Stream->index)
-                        while (true)
+                        while (!reachedCutEnd)
                         {
                             // handle multi-threading-only EAGAIN 
                             int ret;

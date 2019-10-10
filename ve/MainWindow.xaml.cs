@@ -26,7 +26,7 @@ namespace ve
             var vm = new MainWindowViewModel();
             var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"Z:\Marius\cp_loading_icon.mp4") };
             vm.MediaFiles.Add(mf);
-            vm.AddSection(mf, TimeSpan.FromSeconds(5));
+            vm.AddSection(mf, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(6.5));
             OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22);
             Environment.Exit(0);
 
