@@ -160,7 +160,11 @@ namespace ve.FFmpeg
                 var decoder = mf.Decoder;
 
                 // seek to start cut
-                var tsdelta = ffmpeg.av_rescale_q((long)(section.Start.TotalSeconds * ffmpeg.AV_TIME_BASE), ffmpeg.av_get_time_base_q(), decoder.VideoStream.Stream->time_base);
+                var tsdelta = ffmpeg.av_rescale((long)(section.Start.TotalSeconds * ffmpeg.AV_TIME_BASE), 
+                    decoder.VideoStream.Stream->time_base.den, decoder.VideoStream.Stream->time_base.num * ffmpeg.AV_TIME_BASE);
+                var tsdeltaMinus1 = tsdelta - ffmpeg.av_rescale((long)(framerate.den * ffmpeg.AV_TIME_BASE / framerate.num), 
+                    decoder.VideoStream.Stream->time_base.den, decoder.VideoStream.Stream->time_base.num * ffmpeg.AV_TIME_BASE);
+
                 if (section.Start != TimeSpan.Zero)
                 {
                     // seek for the last keyframe before my target timestamp
@@ -171,7 +175,14 @@ namespace ve.FFmpeg
                     do
                     {
                         ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegError();
-                    } while (packet.Pointer->pts < tsdelta);
+                        if (packet.Pointer->stream_index != decoder.VideoStream.Stream->index)
+                            continue;
+
+                        ffmpeg.avcodec_send_packet(decoder.VideoStream.DecoderCodecContext, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                        ffmpeg.av_packet_unref(packet.Pointer);
+                        if (ffmpeg.avcodec_receive_frame(decoder.VideoStream.DecoderCodecContext, frame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof() == FFmpegSetup.AVERROR_EAGAIN)
+                            continue;
+                    } while (frame.Pointer->pkt_dts < tsdeltaMinus1);
                 }
 
                 var encoderThread = new Thread(() =>
