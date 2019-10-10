@@ -46,6 +46,10 @@
       <LastGenOutput>MediaFileModel.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
+    <None Update="Model\RectangleModel.tt">
+      <LastGenOutput>SectionModel.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="Model\SectionModel.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>SectionModel.cs</LastGenOutput>

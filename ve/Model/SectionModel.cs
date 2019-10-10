@@ -7,7 +7,7 @@ using System;
 using Avalonia.Media;
 
 namespace Model {
-public class SectionModel : ReactiveObject
+public partial class SectionModel : ReactiveObject
 {
 	    private MediaFileModel __MediaFile ;
 	

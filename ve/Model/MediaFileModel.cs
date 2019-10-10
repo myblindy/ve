@@ -7,7 +7,7 @@ using System;
 using Avalonia.Media;
 
 namespace Model {
-public class MediaFileModel : ReactiveObject
+public partial class MediaFileModel : ReactiveObject
 {
 	    private ve.FFmpeg.Support.FFmpegVideoStreamDecoder __Decoder ;
 	

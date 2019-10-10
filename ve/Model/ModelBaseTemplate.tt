@@ -12,7 +12,7 @@ using System;
 using Avalonia.Media;
 
 namespace Model {
-public class <#= name #> : ReactiveObject
+public partial class <#= name #> : ReactiveObject
 {
 	<#+ foreach(var field in fields) { #>
     private <#= field.Type #> __<#= field.Name #> <#= string.IsNullOrWhiteSpace(field.Init) ? "" : $" = {field.Init}" #>;

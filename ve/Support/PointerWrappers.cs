@@ -96,10 +96,10 @@ public class SafeAVDictionary : SafeHandle
 		var dict = (AVDictionary *)handle.ToPointer();
 
 		// remove any values still in
-		AVDictionaryEntry *t = default;
-		while((t = ffmpeg.av_dict_get(dict, "", t, ffmpeg.AV_DICT_IGNORE_SUFFIX)) != null)
-		{
-		}
+		//AVDictionaryEntry *t = default;
+		//while((t = ffmpeg.av_dict_get(dict, "", t, ffmpeg.AV_DICT_IGNORE_SUFFIX)) != null)
+		//{
+		//}
 
 		ffmpeg.av_dict_free(&dict);
 		SetHandle(IntPtr.Zero);
@@ -111,13 +111,6 @@ public class SafeAVDictionary : SafeHandle
     {
         var dict = (AVDictionary*)handle;
         ffmpeg.av_dict_set(&dict, key, val, flags);
-    }
-
-    unsafe public delegate void UpdateDelegate(AVDictionary** dict);
-    unsafe public void Update(UpdateDelegate upd)
-    {
-        var dict = (AVDictionary*)handle;
-        upd(&dict);
         SetHandle(new IntPtr(dict));
     }
 }
