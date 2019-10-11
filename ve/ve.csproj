@@ -47,7 +47,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Model\RectangleModel.tt">
-      <LastGenOutput>SectionModel.cs</LastGenOutput>
+      <LastGenOutput>RectangleModel.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Model\SectionModel.tt">
@@ -65,6 +65,11 @@
   <ItemGroup>
     <Compile Update="Controls\Graph.xaml.cs">
       <DependentUpon>Graph.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Model\RectangleModel.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>RectangleModel.tt</DependentUpon>
     </Compile>
     <Compile Update="Model\SectionModel.cs">
       <DesignTime>True</DesignTime>

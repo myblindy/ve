@@ -107,6 +107,14 @@ public class SafeAVDictionary : SafeHandle
 		return true;
 	}
 
+    unsafe public delegate void UpdateDelegate(AVDictionary** dict);
+    unsafe public void Update(UpdateDelegate upd)
+    {
+        var dict = (AVDictionary*)handle;
+        upd(&dict);
+        SetHandle(new IntPtr(dict));
+    }
+
     unsafe public void Set(string key, string val, int flags = 0)
     {
         var dict = (AVDictionary*)handle;
