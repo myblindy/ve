@@ -85,6 +85,9 @@ namespace ve.FFmpeg
 
             var extramfdata = new Dictionary<MediaFileModel, MediaFileData>();
 
+            var cropNeeded = !(vm.Camera.KeyFrames.Count == 0
+                || (vm.Camera.KeyFrames.Count == 1 && vm.Camera.KeyFrames[0].InnerObject == new RectangleModel(0, 0, framesize.Width, framesize.Height)));
+
             // setup decoding the input frames
             var mfs = vm.Sections.Select(s => s.MediaFile).Distinct().ToArray();
             foreach (var mf in mfs)
@@ -125,7 +128,6 @@ namespace ve.FFmpeg
                     filterinputs->pad_idx = 0;
                     filterinputs->next = null;
 
-                    var cropNeeded = !(vm.Camera.KeyFrames.Count == 0 || (vm.Camera.KeyFrames.Count == 1 && vm.Camera.KeyFrames[0].InnerObject == new RectangleModel(0, 0, framesize.Width, framesize.Height)));
                     ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? "crop" : "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
                     ffmpeg.avfilter_graph_config(data.Graph, null).ThrowExceptionIfFFmpegError();
                 }
@@ -182,6 +184,8 @@ namespace ve.FFmpeg
                 var decoderThread = new Thread(() =>
                 {
                     using var filteredFrame = new SafeAVFrame();
+                    RectangleModel LastRectangle = null;
+
                     while (true)
                     {
                         try
@@ -203,6 +207,18 @@ namespace ve.FFmpeg
                             }
 
                             frame.Pointer->pts = frame.Pointer->best_effort_timestamp - cutStartTs;
+
+                            if (cropNeeded)
+                            {
+                                if (LastRectangle is null)
+                                    LastRectangle=vm.Camera[frame.Pointer->pts]
+                                else
+                                {
+
+                                }
+
+                                ffmpeg.avfilter_graph_send_command();
+                            }
 
                             // push the decoded frame in the graph
                             ffmpeg.av_buffersrc_write_frame(data.BufferSourceContext, frame.Pointer).ThrowExceptionIfFFmpegError();
