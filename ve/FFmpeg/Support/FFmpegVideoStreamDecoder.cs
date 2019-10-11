@@ -19,7 +19,7 @@ namespace ve.FFmpeg.Support
         private AVFrame* FramePointer { get; set; } = ffmpeg.av_frame_alloc();
         private AVPacket* VideoPacketPointer { get; set; } = ffmpeg.av_packet_alloc();
 
-        private readonly Thread VideoThread;
+        //private readonly Thread VideoThread;
 
         public FFmpegVideoStream VideoStream { get; }
 
@@ -75,45 +75,24 @@ namespace ve.FFmpeg.Support
                         break;
                 }
 
-            VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}", IsBackground = true };
+            //VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}", IsBackground = true };
             //VideoThread.Start();
         }
 
-        private readonly ConcurrentQueue<FFmpegPacketWrapper> VideoPacketQueue = new ConcurrentQueue<FFmpegPacketWrapper>();
+        //private volatile bool QuitRequest, PlayingRequest, Playing;
+        //private readonly AutoResetEvent VideoThreadPlayRequestEvent = new AutoResetEvent(false);
 
-        private void VideoThreadProc(object obj)
-        {
-            while (true)
-            {
-                Playing = PlayingRequest;
-                if (!PlayingRequest) VideoThreadPlayRequestEvent.WaitOne();
-                if (QuitRequest) return;
+        //public void Play()
+        //{
+        //    PlayingRequest = true;
+        //    VideoThreadPlayRequestEvent.Set();
+        //}
 
-                if (ffmpeg.av_read_frame(FormatContextPointer, VideoPacketPointer) == ffmpeg.AVERROR_EOF)
-                {
-                    // done
-                    PlayingRequest = Playing = false;
-                }
-
-                if (VideoPacketPointer->stream_index == VideoStream.Stream->index)
-                    VideoPacketQueue.Enqueue(new FFmpegPacketWrapper { Packet = VideoPacketPointer });
-            }
-        }
-
-        private volatile bool QuitRequest, PlayingRequest, Playing;
-        private readonly AutoResetEvent VideoThreadPlayRequestEvent = new AutoResetEvent(false);
-
-        public void Play()
-        {
-            PlayingRequest = true;
-            VideoThreadPlayRequestEvent.Set();
-        }
-
-        public void Stop(bool wait = false)
-        {
-            PlayingRequest = false;
-            if (wait) VideoThread.Join();
-        }
+        //public void Stop(bool wait = false)
+        //{
+        //    PlayingRequest = false;
+        //    if (wait) VideoThread.Join();
+        //}
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
@@ -125,10 +104,10 @@ namespace ve.FFmpeg.Support
                 if (disposing)
                 {
                     // managed state
-                    QuitRequest = true;
-                    VideoThreadPlayRequestEvent.Set();
-                    Stop(true);
-                    VideoThreadPlayRequestEvent.Dispose();
+                    //QuitRequest = true;
+                    //VideoThreadPlayRequestEvent.Set();
+                    //Stop(true);
+                    //VideoThreadPlayRequestEvent.Dispose();
                 }
 
                 // unmanaged resources 
@@ -177,10 +156,5 @@ namespace ve.FFmpeg.Support
     public unsafe struct FFmpegAudioStream
     {
         internal AVStream* Stream;
-    }
-
-    public unsafe struct FFmpegPacketWrapper
-    {
-        internal AVPacket* Packet;
     }
 }

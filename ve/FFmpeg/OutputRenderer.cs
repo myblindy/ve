@@ -1,6 +1,6 @@
 ﻿using FFmpeg.AutoGen;
 using Microsoft.Win32.SafeHandles;
-using Model;
+using ve.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +15,7 @@ namespace ve.FFmpeg
 {
     public static class OutputRenderer
     {
-        public static unsafe void Start(MainWindowViewModel vm, string outputFileName, int crf)
+        internal static unsafe void Start(MainWindowViewModel vm, string outputFileName, int crf)
         {
             // init output stream
             var ofmt = ffmpeg.av_guess_format(Path.GetExtension(outputFileName)[1..], null, null);
@@ -108,20 +108,10 @@ namespace ve.FFmpeg
                         $"time_base={timebase.num}/{timebase.den}:pixel_aspect={ivstreamw.Stream->codec->sample_aspect_ratio.num}/{ivstreamw.Stream->codec->sample_aspect_ratio.den}";
                     ffmpeg.avfilter_graph_create_filter(&data.BufferSourceContext, buffersrc, "in", srcfilterargs, null, data.Graph).ThrowExceptionIfFFmpegError();
 
+                    using (var sinkParams = new SafeAVBufferSinkParams())
                     {
-                        // sink
-                        AVBufferSinkParams* sinkparams = null;
-                        try
-                        {
-                            sinkparams = ffmpeg.av_buffersink_params_alloc();
-                            var sinkPixelFormats = new[] { AVPixelFormat.AV_PIX_FMT_RGB24, AVPixelFormat.AV_PIX_FMT_YUV420P, AVPixelFormat.AV_PIX_FMT_NONE };
-                            fixed (AVPixelFormat* sinkPixelFormatsPointer = sinkPixelFormats)
-                            {
-                                sinkparams->pixel_fmts = sinkPixelFormatsPointer;
-                                ffmpeg.avfilter_graph_create_filter(&data.BufferSinkContext, buffersink, "out", null, sinkparams, data.Graph).ThrowExceptionIfFFmpegError();
-                            }
-                        }
-                        finally { ffmpeg.av_free(sinkparams); }
+                        sinkParams.SetPixelFormats(AVPixelFormat.AV_PIX_FMT_YUV420P, AVPixelFormat.AV_PIX_FMT_RGB24);
+                        ffmpeg.avfilter_graph_create_filter(&data.BufferSinkContext, buffersink, "out", null, sinkParams.Pointer, data.Graph).ThrowExceptionIfFFmpegError();
                     }
 
                     // set the graph endpoints
@@ -135,7 +125,8 @@ namespace ve.FFmpeg
                     filterinputs->pad_idx = 0;
                     filterinputs->next = null;
 
-                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
+                    var cropNeeded = !(vm.Camera.KeyFrames.Count == 0 || (vm.Camera.KeyFrames.Count == 1 && vm.Camera.KeyFrames[0].InnerObject == new RectangleModel(0, 0, framesize.Width, framesize.Height)));
+                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? "crop" : "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
                     ffmpeg.avfilter_graph_config(data.Graph, null).ThrowExceptionIfFFmpegError();
                 }
                 finally

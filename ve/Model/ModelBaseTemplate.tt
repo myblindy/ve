@@ -3,16 +3,17 @@
 	
 	Field F(string type, string name, string init = null) => new Field { Type = type, Name = name, Init = init };
 	
-	void Generate(string name, params Field[] fields)
+	void Generate(string name, string where, params Field[] fields)
 	{
 #>
 
 using ReactiveUI;
 using System;
 using Avalonia.Media;
+using System.Collections.Generic;
 
-namespace Model {
-public partial class <#= name #> : ReactiveObject
+namespace ve.Model {
+public partial class <#= name #> : ReactiveObject <#= where ?? "" #>
 {
 	<#+ foreach(var field in fields) { #>
     private <#= field.Type #> __<#= field.Name #> <#= string.IsNullOrWhiteSpace(field.Init) ? "" : $" = {field.Init}" #>;

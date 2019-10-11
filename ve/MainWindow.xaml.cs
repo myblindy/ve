@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Diagnostics.ViewModels;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
-using Model;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using ve.FFmpeg;
 using ve.FFmpeg.Support;
+using ve.Model;
 
 namespace ve
 {
@@ -26,7 +26,10 @@ namespace ve
             var vm = new MainWindowViewModel();
             var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"Z:\Marius\cp_loading_icon.mp4") };
             vm.MediaFiles.Add(mf);
-            vm.AddSection(mf, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(6.5));
+            vm.AddSection(mf, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(6.5));
+
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 0, Width = 200, Height = 100 }, TimeSpan.Zero);
+
             OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22);
             Environment.Exit(0);
 
@@ -71,10 +74,11 @@ namespace ve
         }
     }
 
-    public class MainWindowViewModel : ReactiveObject
+    internal class MainWindowViewModel : ReactiveObject
     {
         public ObservableCollection<MediaFileModel> MediaFiles { get; } = new ObservableCollection<MediaFileModel>();
         public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();
+        public KeyFrameModel<RectangleModel> Camera { get; } = new KeyFrameModel<RectangleModel>();
 
         internal readonly Random Random = new Random();
 

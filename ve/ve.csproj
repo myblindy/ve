@@ -9,6 +9,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <NoWarn>1701;1702;CA1303;CA1815;CA2007</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="**\*.xaml.cs">
@@ -35,13 +36,21 @@
     <None Remove="Controls\GraphTimePanel.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="0.8.2" />
-    <PackageReference Include="Avalonia.Desktop" Version="0.8.2" />
+    <PackageReference Include="Avalonia" Version="0.8.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.8.3" />
     <PackageReference Include="FFmpeg.AutoGen" Version="4.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="morelinq" Version="3.2.0" />
     <PackageReference Include="ReactiveUI" Version="10.4.1" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Model\KeyFrameInstanceModel.tt">
+      <LastGenOutput>KeyFrameInstanceModel.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="Model\MediaFileModel.tt">
       <LastGenOutput>MediaFileModel.cs</LastGenOutput>
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -75,6 +84,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>SectionModel.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Model\KeyFrameInstanceModel.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>KeyFrameInstanceModel.tt</DependentUpon>
     </Compile>
     <Compile Update="Model\MediaFileModel.cs">
       <DesignTime>True</DesignTime>

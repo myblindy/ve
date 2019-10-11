@@ -30,6 +30,7 @@ namespace ve.FFmpeg.Support
             throw new InvalidProgramException("Could not find ffmpeg binaries.");
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "name matches ffmpeg library")]
         public static unsafe string av_strerror(int error)
         {
             var bufferSize = 1024;
@@ -45,6 +46,7 @@ namespace ve.FFmpeg.Support
             return error;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "name matches ffmpeg library")]
         public static readonly int AVERROR_EAGAIN = ffmpeg.AVERROR(ffmpeg.EAGAIN);
         public static int ThrowExceptionIfFFmpegErrorOtherThanAgainEof(this int error)
         {

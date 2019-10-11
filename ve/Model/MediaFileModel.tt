@@ -8,6 +8,6 @@
 
 <#@ include file="modelbasetemplate.tt" #>
 
-<# Generate("MediaFileModel", 
+<# Generate("MediaFileModel",  null,
 	F("ve.FFmpeg.Support.FFmpegVideoStreamDecoder", "Decoder"),
 	F("Brush", "BackgroundBrush"));  #>

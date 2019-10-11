@@ -8,7 +8,6 @@
 
 <#@ include file="modelbasetemplate.tt" #>
 
-<# Generate("SectionModel",  null,
-	F("MediaFileModel", "MediaFile"),
-	F("TimeSpan", "Start"),
-	F("TimeSpan", "End"));  #>
+<# Generate("KeyFrameInstanceModel<T>", "where T: IKeyFrameInterpolation<T>",
+	F("T", "InnerObject"),
+	F("TimeSpan", "Timestamp"));  #>

@@ -6,8 +6,8 @@ using ReactiveUI;
 using System;
 using Avalonia.Media;
 
-namespace Model {
-public partial class SectionModel : ReactiveObject
+namespace ve.Model {
+public partial class SectionModel : ReactiveObject 
 {
 	    private MediaFileModel __MediaFile ;
 	
