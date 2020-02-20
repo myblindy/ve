@@ -26,11 +26,14 @@ namespace ve
             var vm = new MainWindowViewModel();
             var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"Z:\Marius\cp_loading_icon.mp4") };
             vm.MediaFiles.Add(mf);
-            vm.AddSection(mf, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(6.5));
+            vm.AddSection(mf, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(7.5));
 
-            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 0, Width = 200, Height = 100 }, TimeSpan.Zero);
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 100, Y = 100, Width = 200, Height = 100 }, TimeSpan.Zero);
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 50, Y = 50, Width = 300, Height = 200 }, TimeSpan.FromSeconds(1));
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 200, Width = 200, Height = 100 }, TimeSpan.FromSeconds(2));
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 0, Width = 200, Height = 100 }, TimeSpan.FromSeconds(3));
 
-            OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22);
+            OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22, 200, 100);
             Environment.Exit(0);
 
             InitializeComponent();

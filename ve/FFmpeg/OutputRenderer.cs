@@ -15,7 +15,7 @@ namespace ve.FFmpeg
 {
     public static class OutputRenderer
     {
-        internal static unsafe void Start(MainWindowViewModel vm, string outputFileName, int crf)
+        internal static unsafe void Start(MainWindowViewModel vm, string outputFileName, int crf, int width, int height)
         {
             // init output stream
             var ofmt = ffmpeg.av_guess_format(Path.GetExtension(outputFileName)[1..], null, null);
@@ -32,8 +32,8 @@ namespace ve.FFmpeg
             ffmpeg.avcodec_get_context_defaults3(ovencoderContext, ovencoder).ThrowExceptionIfFFmpegError();
             ovencoderContext->codec_id = ovcodecid;
             //ovencoderContext->bit_rate = (long)bitrate * 1000;
-            ovencoderContext->width = framesize.Width;
-            ovencoderContext->height = framesize.Height;
+            ovencoderContext->width = width/*framesize.Width*/;
+            ovencoderContext->height = height/*framesize.Height*/;
             ovencoderContext->time_base = ffmpeg.av_inv_q(framerate);           // todo framerate should be an output
             ovencoderContext->gop_size = 12;                                    // one intra-frame every this many frames at most
             ovencoderContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
@@ -128,7 +128,7 @@ namespace ve.FFmpeg
                     filterinputs->pad_idx = 0;
                     filterinputs->next = null;
 
-                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? "crop" : "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
+                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? $"crop,scale={width}:{height}" : "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
                     ffmpeg.avfilter_graph_config(data.Graph, null).ThrowExceptionIfFFmpegError();
                 }
                 finally
@@ -151,10 +151,11 @@ namespace ve.FFmpeg
                 var mf = section.MediaFile;
                 var data = extramfdata[mf];
                 var decoder = mf.Decoder;
+                var graph = data.Graph;
 
                 // seek to start cut
                 var cutStartTs = FFmpegUtilities.PreciseSeek(section.Start, decoder.FormatContextPointer, decoder.VideoStream.DecoderCodecContext, decoder.VideoStream.Stream);
-                var cutEndTs = FFmpegUtilities.GetTimestamp(section.End, decoder.VideoStream.Stream);
+                var cutEndTs = FFmpegUtilities.GetInternalTimestamp(section.End, decoder.VideoStream.Stream);
                 bool reachedCutEnd = false;
 
                 var encoderThread = new Thread(() =>
@@ -210,14 +211,27 @@ namespace ve.FFmpeg
 
                             if (cropNeeded)
                             {
-                                if (LastRectangle is null)
-                                    LastRectangle=vm.Camera[frame.Pointer->pts]
-                                else
+                                var rect = vm.Camera[FFmpegUtilities.GetTimespanTimestamp(frame.Pointer->pts, decoder.VideoStream.Stream)];
+                                if (LastRectangle is null || LastRectangle != rect)
                                 {
+                                    if (LastRectangle is null || rect.X != LastRectangle.X)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "x", rect.X.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                            .ThrowExceptionIfFFmpegError();
 
+                                    if (LastRectangle is null || rect.Y != LastRectangle.Y)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "y", rect.Y.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                            .ThrowExceptionIfFFmpegError();
+
+                                    if (LastRectangle is null || rect.Width != LastRectangle.Width)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "w", rect.Width.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                            .ThrowExceptionIfFFmpegError();
+
+                                    if (LastRectangle is null || rect.Height != LastRectangle.Height)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "h", rect.Height.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                            .ThrowExceptionIfFFmpegError();
+
+                                    LastRectangle = rect;
                                 }
-
-                                ffmpeg.avfilter_graph_send_command();
                             }
 
                             // push the decoded frame in the graph

@@ -7,12 +7,15 @@ namespace ve.FFmpeg.Support
 {
     public static class FFmpegUtilities
     {
-        public static unsafe long GetTimestamp(TimeSpan position, AVStream* stream) =>
-            ffmpeg.av_rescale((long)(position.TotalSeconds * ffmpeg.AV_TIME_BASE), stream->time_base.den, stream->time_base.num * ffmpeg.AV_TIME_BASE);
+        public static unsafe long GetInternalTimestamp(TimeSpan position, AVStream* stream) =>
+            (long)(position.TotalSeconds * stream->time_base.den / stream->time_base.num);
+
+        public static unsafe TimeSpan GetTimespanTimestamp(long position, AVStream* stream) =>
+            TimeSpan.FromSeconds((double)position / stream->time_base.den * stream->time_base.num);
 
         public static unsafe long PreciseSeek(TimeSpan position, AVFormatContext* decoderFormatContext, AVCodecContext* decoderCodecContext, AVStream* stream)
         {
-            var tsdelta = GetTimestamp(position, stream);
+            var tsdelta = GetInternalTimestamp(position, stream);
             var tsdeltaMinus1 = tsdelta - ffmpeg.av_rescale(ffmpeg.av_rescale(decoderCodecContext->framerate.den, ffmpeg.AV_TIME_BASE, decoderCodecContext->framerate.num),
                 stream->time_base.den, stream->time_base.num * ffmpeg.AV_TIME_BASE);
 
