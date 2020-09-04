@@ -1,6 +1,5 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Diagnostics.ViewModels;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using ReactiveUI;
@@ -24,30 +23,25 @@ namespace ve
 
             // test
             var vm = new MainWindowViewModel();
-            var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"Z:\Marius\cp_loading_icon.mp4") };
+            var mf = new MediaFileModel { Decoder = new FFmpegVideoStreamDecoder(@"E:\vids\Gfriend\shows\G-ING\200108 [G-ING] Ready for Rehearsal - GFRIEND (여자친구).mkv") };
             vm.MediaFiles.Add(mf);
-            vm.AddSection(mf, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(7.5));
+            vm.AddSection(mf, TimeSpan.FromSeconds(26.7), TimeSpan.FromSeconds(31));
 
-            vm.Camera.AddKeyFrame(new RectangleModel { X = 100, Y = 100, Width = 200, Height = 100 }, TimeSpan.Zero);
-            vm.Camera.AddKeyFrame(new RectangleModel { X = 50, Y = 50, Width = 300, Height = 200 }, TimeSpan.FromSeconds(1));
-            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 200, Width = 200, Height = 100 }, TimeSpan.FromSeconds(2));
-            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 0, Width = 200, Height = 100 }, TimeSpan.FromSeconds(3));
+            const int width = 600, height = 980;
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 900, Y = 100, Width = width, Height = height }, TimeSpan.Zero);
+            vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 100, Width = width, Height = height }, TimeSpan.FromSeconds(1));
+            //vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 200, Width = 200, Height = 100 }, TimeSpan.FromSeconds(2));
+            //vm.Camera.AddKeyFrame(new RectangleModel { X = 0, Y = 0, Width = 200, Height = 100 }, TimeSpan.FromSeconds(3));
 
-            OutputRenderer.Start(vm, @"c:\stuff\temp.webm", 22, 200, 100);
+            OutputRenderer.Start(vm, @"e:\temp\yuju-test.webm", 22, width, height);
             Environment.Exit(0);
 
             InitializeComponent();
             DataContext = new MainWindowViewModel();
-
-#if DEBUG
-            this.AttachDevTools();
-#endif
         }
 
-        private void InitializeComponent()
-        {
+        private void InitializeComponent() =>
             AvaloniaXamlLoader.Load(this);
-        }
 
         public async void AddMediaFile()
         {
@@ -77,7 +71,7 @@ namespace ve
         }
     }
 
-    internal class MainWindowViewModel : ReactiveObject
+    public class MainWindowViewModel : ReactiveObject
     {
         public ObservableCollection<MediaFileModel> MediaFiles { get; } = new ObservableCollection<MediaFileModel>();
         public ObservableCollection<SectionModel> Sections { get; } = new ObservableCollection<SectionModel>();

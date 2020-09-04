@@ -16,10 +16,8 @@ namespace ve.FFmpeg.Support
         public string FilePath { get; }
 
         public AVFormatContext* FormatContextPointer { get; private set; } = ffmpeg.avformat_alloc_context();
-        private AVFrame* FramePointer { get; set; } = ffmpeg.av_frame_alloc();
-        private AVPacket* VideoPacketPointer { get; set; } = ffmpeg.av_packet_alloc();
-
-        //private readonly Thread VideoThread;
+        public SafeAVFrame CurrentAVFrame { get; private set; } = new();
+        private SafeAVPacket CurrentAVPacket { get; set; } = new();
 
         public FFmpegVideoStream VideoStream { get; }
 
@@ -74,28 +72,37 @@ namespace ve.FFmpeg.Support
                             FormatContextPointer->streams[idx]->discard = AVDiscard.AVDISCARD_ALL;
                         break;
                 }
-
-            //VideoThread = new Thread(VideoThreadProc) { Name = $"Video Player Thread for {FilePath}", IsBackground = true };
-            //VideoThread.Start();
         }
 
-        //private volatile bool QuitRequest, PlayingRequest, Playing;
-        //private readonly AutoResetEvent VideoThreadPlayRequestEvent = new AutoResetEvent(false);
+        public bool TryDecodeNextFrame()
+        {
+            CurrentAVFrame.Unref();
 
-        //public void Play()
-        //{
-        //    PlayingRequest = true;
-        //    VideoThreadPlayRequestEvent.Set();
-        //}
+            int error;
+            do
+            {
+                try
+                {
+                    do
+                    {
+                        error = ffmpeg.av_read_frame(FormatContextPointer, CurrentAVPacket.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                        if (error == ffmpeg.AVERROR_EOF)
+                            return false;
+                    } while (CurrentAVPacket.Pointer->stream_index != VideoStream.Stream->index);                                               // ignore anything but the video stream we care about
 
-        //public void Stop(bool wait = false)
-        //{
-        //    PlayingRequest = false;
-        //    if (wait) VideoThread.Join();
-        //}
+                    ffmpeg.avcodec_send_packet(VideoStream.DecoderCodecContext, CurrentAVPacket.Pointer).ThrowExceptionIfFFmpegError();         // send the packet to the frame decoder
+                }
+                finally { CurrentAVPacket.Unref(); }
+
+                error = ffmpeg.avcodec_receive_frame(VideoStream.DecoderCodecContext, CurrentAVFrame.Pointer);
+            } while (error == FFmpegSetup.AVERROR_EAGAIN);
+            error.ThrowExceptionIfFFmpegError();
+
+            return true;
+        }
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {
@@ -111,11 +118,8 @@ namespace ve.FFmpeg.Support
                 }
 
                 // unmanaged resources 
-                ffmpeg.av_frame_unref(FramePointer);
-                ffmpeg.av_free(FramePointer);
-
-                ffmpeg.av_packet_unref(VideoPacketPointer);
-                ffmpeg.av_free(VideoPacketPointer);
+                CurrentAVFrame.Dispose();
+                CurrentAVPacket.Dispose();
 
                 if (VideoStream.Stream != null)
                     ffmpeg.avcodec_close(VideoStream.Stream->codec);

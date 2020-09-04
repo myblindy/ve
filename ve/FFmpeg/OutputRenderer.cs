@@ -18,33 +18,33 @@ namespace ve.FFmpeg
         internal static unsafe void Start(MainWindowViewModel vm, string outputFileName, int crf, int width, int height)
         {
             // init output stream
-            var ofmt = ffmpeg.av_guess_format(Path.GetExtension(outputFileName)[1..], null, null);
-            using var ofctx = new SafeAVFormatContext(pp =>
-                ffmpeg.avformat_alloc_output_context2(pp, ofmt, null, null).ThrowExceptionIfFFmpegError());
+            var outputFormat = ffmpeg.av_guess_format(Path.GetExtension(outputFileName)[1..], null, null);
+            using var outputFormatContext = new SafeAVFormatContext(pp =>
+                ffmpeg.avformat_alloc_output_context2(pp, outputFormat, null, null).ThrowExceptionIfFFmpegError());
 
-            var ovcodecid = FindCodecIDFromFileName(outputFileName);
-            var ovencoder = ffmpeg.avcodec_find_encoder(ovcodecid);
+            var outputCodecId = FindCodecIdFromFileName(outputFileName);
+            var outputEncoderCodec = ffmpeg.avcodec_find_encoder(outputCodecId);
 
-            var framesize = vm.MediaFiles[0].Decoder.VideoStream.FrameSize;                                                             // frame size should be an output
-            var framerate = vm.MediaFiles[0].Decoder.VideoStream.DecoderCodecContext->framerate;
-            var ovencoderContext = ffmpeg.avcodec_alloc_context3(ovencoder);
+            var frameSize = vm.MediaFiles[0].Decoder.VideoStream.FrameSize;                                                             // frame size should be an output
+            var frameRate = vm.MediaFiles[0].Decoder.VideoStream.DecoderCodecContext->framerate;
+            var outputEncoderCodecContext = ffmpeg.avcodec_alloc_context3(outputEncoderCodec);
 
-            ffmpeg.avcodec_get_context_defaults3(ovencoderContext, ovencoder).ThrowExceptionIfFFmpegError();
-            ovencoderContext->codec_id = ovcodecid;
+            ffmpeg.avcodec_get_context_defaults3(outputEncoderCodecContext, outputEncoderCodec).ThrowExceptionIfFFmpegError();
+            outputEncoderCodecContext->codec_id = outputCodecId;
             //ovencoderContext->bit_rate = (long)bitrate * 1000;
-            ovencoderContext->width = width/*framesize.Width*/;
-            ovencoderContext->height = height/*framesize.Height*/;
-            ovencoderContext->time_base = ffmpeg.av_inv_q(framerate);           // todo framerate should be an output
-            ovencoderContext->gop_size = 12;                                    // one intra-frame every this many frames at most
-            ovencoderContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
+            outputEncoderCodecContext->width = width/*framesize.Width*/;
+            outputEncoderCodecContext->height = height/*framesize.Height*/;
+            outputEncoderCodecContext->time_base = ffmpeg.av_inv_q(frameRate);           // todo framerate should be an output
+            outputEncoderCodecContext->gop_size = 12;                                    // one intra-frame every this many frames at most
+            outputEncoderCodecContext->pix_fmt = AVPixelFormat.AV_PIX_FMT_YUV420P;
 
             // mpeg workaround
-            if (ovencoderContext->codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO)
-                ovencoderContext->mb_decision = 2;
+            if (outputEncoderCodecContext->codec_id == AVCodecID.AV_CODEC_ID_MPEG1VIDEO)
+                outputEncoderCodecContext->mb_decision = 2;
 
             // generic workaround
-            if ((ofmt->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-                ovencoderContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+            if ((outputFormat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+                outputEncoderCodecContext->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
 
             // encoder settings
             using (var avOptions = new SafeAVDictionary())
@@ -52,16 +52,16 @@ namespace ve.FFmpeg
                 avOptions.Set("deadline", "best");
                 avOptions.Set("cpu-used", "0");
 
-                if (ovcodecid == AVCodecID.AV_CODEC_ID_VP8)
+                if (outputCodecId == AVCodecID.AV_CODEC_ID_VP8)
                 {
                     avOptions.Set("crf", $"{crf:0.00}");
 
                     //This value was chosen to make the bitrate high enough
                     //for libvpx to "turn off" the maximum bitrate feature
                     //that is normally applied to constant quality.
-                    ovencoderContext->bit_rate = (long)framesize.Width * framesize.Height * framerate.num / framerate.den;
+                    outputEncoderCodecContext->bit_rate = (long)frameSize.Width * frameSize.Height * frameRate.num / frameRate.den;
                 }
-                else if (ovcodecid == AVCodecID.AV_CODEC_ID_H264)
+                else if (outputCodecId == AVCodecID.AV_CODEC_ID_H264)
                 {
                     avOptions.Set("rc", "cqp");
                     avOptions.Set("qp_i", $"{crf:0.00}");
@@ -71,73 +71,73 @@ namespace ve.FFmpeg
 
                 // open the codec 
                 avOptions.Update(pp =>
-                    ffmpeg.avcodec_open2(ovencoderContext, ovencoder, pp).ThrowExceptionIfFFmpegError());
+                    ffmpeg.avcodec_open2(outputEncoderCodecContext, outputEncoderCodec, pp).ThrowExceptionIfFFmpegError());
             }
 
             // create the output stream from the codec definition
-            var ovstream = ffmpeg.avformat_new_stream(ofctx.Pointer, null);
-            ffmpeg.avcodec_parameters_from_context(ovstream->codecpar, ovencoderContext).ThrowExceptionIfFFmpegError();
-            ovstream->time_base = ovencoderContext->time_base;
+            var outputStream = ffmpeg.avformat_new_stream(outputFormatContext.Pointer, null);
+            ffmpeg.avcodec_parameters_from_context(outputStream->codecpar, outputEncoderCodecContext).ThrowExceptionIfFFmpegError();
+            outputStream->time_base = outputEncoderCodecContext->time_base;
 
             // open the file and write the header
-            ffmpeg.avio_open(&ofctx.Pointer->pb, outputFileName, ffmpeg.AVIO_FLAG_WRITE).ThrowExceptionIfFFmpegError();
-            ffmpeg.avformat_write_header(ofctx.Pointer, null).ThrowExceptionIfFFmpegError();
+            ffmpeg.avio_open(&outputFormatContext.Pointer->pb, outputFileName, ffmpeg.AVIO_FLAG_WRITE).ThrowExceptionIfFFmpegError();
+            ffmpeg.avformat_write_header(outputFormatContext.Pointer, null).ThrowExceptionIfFFmpegError();
 
-            var extramfdata = new Dictionary<MediaFileModel, MediaFileData>();
+            var extraMfData = new Dictionary<MediaFileModel, MediaFileData>();
 
             var cropNeeded = !(vm.Camera.KeyFrames.Count == 0
-                || (vm.Camera.KeyFrames.Count == 1 && vm.Camera.KeyFrames[0].InnerObject == new RectangleModel(0, 0, framesize.Width, framesize.Height)));
+                || (vm.Camera.KeyFrames.Count == 1 && vm.Camera.KeyFrames[0].InnerObject == new RectangleModel(0, 0, frameSize.Width, frameSize.Height)));
 
             // setup decoding the input frames
             var mfs = vm.Sections.Select(s => s.MediaFile).Distinct().ToArray();
             foreach (var mf in mfs)
             {
-                var ivstreamw = mf.Decoder.VideoStream;
+                var inputStreamWrapper = mf.Decoder.VideoStream;
                 var data = new MediaFileData();
 
                 // init the graph
-                var buffersrc = ffmpeg.avfilter_get_by_name("buffer");
-                var buffersink = ffmpeg.avfilter_get_by_name("buffersink");
-                var filteroutputs = ffmpeg.avfilter_inout_alloc();
-                var filterinputs = ffmpeg.avfilter_inout_alloc();
-                var timebase = ovencoderContext->time_base;
+                var bufferSourceFilter = ffmpeg.avfilter_get_by_name("buffer");
+                var bufferSinkFilter = ffmpeg.avfilter_get_by_name("buffersink");
+                var filterOutputs = ffmpeg.avfilter_inout_alloc();
+                var filterInputs = ffmpeg.avfilter_inout_alloc();
+                var timeBase = outputEncoderCodecContext->time_base;
 
                 try
                 {
                     data.Graph = ffmpeg.avfilter_graph_alloc();
 
                     // source
-                    var srcfilterargs = $"video_size={framesize.Width}x{framesize.Height}:pix_fmt={(int)ivstreamw.Stream->codec->pix_fmt}:" +
-                        $"time_base={timebase.num}/{timebase.den}:pixel_aspect={ivstreamw.Stream->codec->sample_aspect_ratio.num}/{ivstreamw.Stream->codec->sample_aspect_ratio.den}";
-                    ffmpeg.avfilter_graph_create_filter(&data.BufferSourceContext, buffersrc, "in", srcfilterargs, null, data.Graph).ThrowExceptionIfFFmpegError();
+                    var srcfilterargs = $"video_size={frameSize.Width}x{frameSize.Height}:pix_fmt={(int)inputStreamWrapper.Stream->codec->pix_fmt}:" +
+                        $"time_base={timeBase.num}/{timeBase.den}:pixel_aspect={inputStreamWrapper.Stream->codec->sample_aspect_ratio.num}/{inputStreamWrapper.Stream->codec->sample_aspect_ratio.den}";
+                    ffmpeg.avfilter_graph_create_filter(&data.BufferSourceContext, bufferSourceFilter, "in", srcfilterargs, null, data.Graph).ThrowExceptionIfFFmpegError();
 
                     using (var sinkParams = new SafeAVBufferSinkParams())
                     {
                         sinkParams.SetPixelFormats(AVPixelFormat.AV_PIX_FMT_YUV420P, AVPixelFormat.AV_PIX_FMT_RGB24);
-                        ffmpeg.avfilter_graph_create_filter(&data.BufferSinkContext, buffersink, "out", null, sinkParams.Pointer, data.Graph).ThrowExceptionIfFFmpegError();
+                        ffmpeg.avfilter_graph_create_filter(&data.BufferSinkContext, bufferSinkFilter, "out", null, sinkParams.Pointer, data.Graph).ThrowExceptionIfFFmpegError();
                     }
 
                     // set the graph endpoints
-                    filteroutputs->name = ffmpeg.av_strdup("in");
-                    filteroutputs->filter_ctx = data.BufferSourceContext;
-                    filteroutputs->pad_idx = 0;
-                    filteroutputs->next = null;
+                    filterOutputs->name = ffmpeg.av_strdup("in");
+                    filterOutputs->filter_ctx = data.BufferSourceContext;
+                    filterOutputs->pad_idx = 0;
+                    filterOutputs->next = null;
 
-                    filterinputs->name = ffmpeg.av_strdup("out");
-                    filterinputs->filter_ctx = data.BufferSinkContext;
-                    filterinputs->pad_idx = 0;
-                    filterinputs->next = null;
+                    filterInputs->name = ffmpeg.av_strdup("out");
+                    filterInputs->filter_ctx = data.BufferSinkContext;
+                    filterInputs->pad_idx = 0;
+                    filterInputs->next = null;
 
-                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? $"crop,scale={width}:{height}" : "copy", &filterinputs, &filteroutputs, null).ThrowExceptionIfFFmpegError();
+                    ffmpeg.avfilter_graph_parse_ptr(data.Graph, cropNeeded ? $"crop" : "copy", &filterInputs, &filterOutputs, null).ThrowExceptionIfFFmpegError();
                     ffmpeg.avfilter_graph_config(data.Graph, null).ThrowExceptionIfFFmpegError();
                 }
                 finally
                 {
-                    ffmpeg.avfilter_inout_free(&filterinputs);
-                    ffmpeg.avfilter_inout_free(&filteroutputs);
+                    ffmpeg.avfilter_inout_free(&filterInputs);
+                    ffmpeg.avfilter_inout_free(&filterOutputs);
                 }
 
-                extramfdata.Add(mf, data);
+                extraMfData.Add(mf, data);
             }
 
             using var frame = new SafeAVFrame();
@@ -149,7 +149,7 @@ namespace ve.FFmpeg
             foreach (var section in vm.Sections)
             {
                 var mf = section.MediaFile;
-                var data = extramfdata[mf];
+                var data = extraMfData[mf];
                 var decoder = mf.Decoder;
                 var graph = data.Graph;
 
@@ -163,12 +163,12 @@ namespace ve.FFmpeg
                     using var encPacket = new SafeAVPacket();
                     while (true)
                     {
-                        var ret = ffmpeg.avcodec_receive_packet(ovencoderContext, encPacket.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                        var ret = ffmpeg.avcodec_receive_packet(outputEncoderCodecContext, encPacket.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
                         if (ret >= 0)
                         {
                             encPacket.Pointer->stream_index = 0;
-                            ffmpeg.av_packet_rescale_ts(encPacket.Pointer, decoder.VideoStream.Stream->time_base, ovstream->time_base);
-                            ffmpeg.av_interleaved_write_frame(ofctx.Pointer, encPacket.Pointer).ThrowExceptionIfFFmpegError();
+                            ffmpeg.av_packet_rescale_ts(encPacket.Pointer, decoder.VideoStream.Stream->time_base, outputStream->time_base);
+                            ffmpeg.av_interleaved_write_frame(outputFormatContext.Pointer, encPacket.Pointer).ThrowExceptionIfFFmpegError();
 
                             if (++frames % 50 == 0)
                                 Console.Write('.');
@@ -181,19 +181,16 @@ namespace ve.FFmpeg
                 encoderThread.Start();
 
                 var decodingDone = false;
-                var decoderSync = new object();
                 var decoderThread = new Thread(() =>
                 {
                     using var filteredFrame = new SafeAVFrame();
-                    RectangleModel LastRectangle = null;
 
                     while (true)
                     {
                         try
                         {
                             int ret;
-                            lock (decoderSync)
-                                ret = ffmpeg.avcodec_receive_frame(decoder.VideoStream.DecoderCodecContext, frame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                            ret = ffmpeg.avcodec_receive_frame(decoder.VideoStream.DecoderCodecContext, frame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
 
                             if (ret == FFmpegSetup.AVERROR_EAGAIN)
                                 if (decodingDone)
@@ -223,11 +220,11 @@ namespace ve.FFmpeg
                                             .ThrowExceptionIfFFmpegError();
 
                                     if (LastRectangle is null || rect.Width != LastRectangle.Width)
-                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "w", rect.Width.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "out_w", rect.Width.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
                                             .ThrowExceptionIfFFmpegError();
 
                                     if (LastRectangle is null || rect.Height != LastRectangle.Height)
-                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "h", rect.Height.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
+                                        ffmpeg.avfilter_graph_send_command(graph, "crop", "out_h", rect.Height.ToString(), null, 0, ffmpeg.AVFILTER_CMD_FLAG_ONE)
                                             .ThrowExceptionIfFFmpegError();
 
                                     LastRectangle = rect;
@@ -247,7 +244,7 @@ namespace ve.FFmpeg
                                         break;
 
                                     // send the frame for encoding, and get the encoded packets
-                                    ret = ffmpeg.avcodec_send_frame(ovencoderContext, filteredFrame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                                    ret = ffmpeg.avcodec_send_frame(outputEncoderCodecContext, filteredFrame.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
                                 }
                                 finally { ffmpeg.av_frame_unref(filteredFrame.Pointer); }
                             }
@@ -258,14 +255,21 @@ namespace ve.FFmpeg
                 { Name = "Decoder Thread" };
                 decoderThread.Start();
 
+                RectangleModel LastRectangle = null;
                 while (true)
                 {
+                    int err;
+                    do
+                    {
+                        err = ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                    }while(err)
+
                     // eof?
                     if (reachedCutEnd || ffmpeg.av_read_frame(decoder.FormatContextPointer, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof()
                         == ffmpeg.AVERROR_EOF)
                     {
                         // enter drain mode
-                        ffmpeg.avcodec_send_frame(ovencoderContext, null).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                        ffmpeg.avcodec_send_frame(outputEncoderCodecContext, null).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
                         break;
                     }
 
@@ -275,8 +279,7 @@ namespace ve.FFmpeg
                         {
                             // handle multi-threading-only EAGAIN 
                             int ret;
-                            lock (decoderSync)
-                                ret = ffmpeg.avcodec_send_packet(decoder.VideoStream.DecoderCodecContext, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
+                            ret = ffmpeg.avcodec_send_packet(decoder.VideoStream.DecoderCodecContext, packet.Pointer).ThrowExceptionIfFFmpegErrorOtherThanAgainEof();
 
                             if (ret >= 0)
                                 break;
@@ -292,11 +295,11 @@ namespace ve.FFmpeg
             }
 
             //cleanup
-            ffmpeg.av_write_trailer(ofctx.Pointer);
-            ffmpeg.avio_closep(&ofctx.Pointer->pb);
+            ffmpeg.av_write_trailer(outputFormatContext.Pointer);
+            ffmpeg.avio_closep(&outputFormatContext.Pointer->pb);
         }
 
-        static AVCodecID FindCodecIDFromFileName(string outputFileName) =>
+        static AVCodecID FindCodecIdFromFileName(string outputFileName) =>
             Path.GetExtension(outputFileName) switch
             {
                 ".webm" => AVCodecID.AV_CODEC_ID_VP8,

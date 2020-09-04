@@ -8,7 +8,7 @@ namespace ve.Controls
     {
         public GraphTimePanel()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
         private void InitializeComponent()

@@ -9,17 +9,21 @@ using System.Runtime.InteropServices;
 #pragma warning disable CA1801
 #pragma warning disable IDE0060
 
-internal partial class SafeAVPacket : SafeHandle
+public partial class SafeAVPacket : SafeHandle
 {
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	public unsafe SafeAVPacket(): base(IntPtr.Zero, true) => SetHandle(new IntPtr(ffmpeg.av_packet_alloc()));
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
+	/// <summary> <see cref="ffmpeg.av_packet_unref"/> </summary>
+	public unsafe void Unref() => ffmpeg.av_packet_unref(Pointer);
+
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	unsafe protected override bool ReleaseHandle()
 	{
-		var ptr = (AVPacket *)handle.ToPointer();
+		var ptr = Pointer;
+		Unref();
 		ffmpeg.av_packet_free(&ptr);
 		SetHandle(IntPtr.Zero);
 		return true;
@@ -33,17 +37,21 @@ internal partial class SafeAVPacket : SafeHandle
 	}
 }
 
-internal partial class SafeAVFrame : SafeHandle
+public partial class SafeAVFrame : SafeHandle
 {
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	public unsafe SafeAVFrame(): base(IntPtr.Zero, true) => SetHandle(new IntPtr(ffmpeg.av_frame_alloc()));
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
+	/// <summary> <see cref="ffmpeg.av_frame_unref"/> </summary>
+	public unsafe void Unref() => ffmpeg.av_frame_unref(Pointer);
+
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	unsafe protected override bool ReleaseHandle()
 	{
-		var ptr = (AVFrame *)handle.ToPointer();
+		var ptr = Pointer;
+		Unref();
 		ffmpeg.av_frame_free(&ptr);
 		SetHandle(IntPtr.Zero);
 		return true;
@@ -57,7 +65,7 @@ internal partial class SafeAVFrame : SafeHandle
 	}
 }
 
-internal partial class SafeAVFormatContext : SafeHandle
+public partial class SafeAVFormatContext : SafeHandle
 {
 	public SafeAVFormatContext(IntPtr handle): base(IntPtr.Zero, true) =>
 		SetHandle(handle);
@@ -74,10 +82,11 @@ internal partial class SafeAVFormatContext : SafeHandle
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
+
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	unsafe protected override bool ReleaseHandle()
 	{
-		var ptr = (AVFormatContext *)handle.ToPointer();
+		var ptr = Pointer;
 		ffmpeg.avformat_free_context(ptr);
 		SetHandle(IntPtr.Zero);
 		return true;
@@ -91,17 +100,18 @@ internal partial class SafeAVFormatContext : SafeHandle
 	}
 }
 
-internal partial class SafeAVBufferSinkParams : SafeHandle
+public partial class SafeAVBufferSinkParams : SafeHandle
 {
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	public unsafe SafeAVBufferSinkParams(): base(IntPtr.Zero, true) => SetHandle(new IntPtr(ffmpeg.av_buffersink_params_alloc()));
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
+
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	unsafe protected override bool ReleaseHandle()
 	{
-		var ptr = (AVBufferSinkParams *)handle.ToPointer();
+		var ptr = Pointer;
 		ExtraReleaseHandleLogic(ptr);
 		ffmpeg.av_free(ptr);
 		SetHandle(IntPtr.Zero);
@@ -118,9 +128,9 @@ internal partial class SafeAVBufferSinkParams : SafeHandle
 
 
 // AVBufferSinkParams pixel format helper
-internal partial class SafeAVBufferSinkParams
+public partial class SafeAVBufferSinkParams
 {
-	private bool MyPixelFormatChange = false;
+	private bool MyPixelFormatChange;
 
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	public unsafe void ClearPixelFormats()
@@ -154,7 +164,7 @@ internal partial class SafeAVBufferSinkParams
 }
 
 // avdict safe wrapper
-internal class SafeAVDictionary : SafeHandle
+public class SafeAVDictionary : SafeHandle
 {
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     unsafe public SafeAVDictionary() : base(IntPtr.Zero, true)

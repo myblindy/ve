@@ -7,12 +7,12 @@
 <#@ output extension=".cs" #>
 
 <#
-	var fields = new (string type, string alloc, string free, bool ptrfree, bool extrareleaselogic)[] 
+	var fields = new (string type, string alloc, string unref, string free, bool ptrfree, bool extrareleaselogic)[] 
 	{ 
-		("AVPacket", "ffmpeg.av_packet_alloc", "ffmpeg.av_packet_free", true, false), 
-		("AVFrame", "ffmpeg.av_frame_alloc", "ffmpeg.av_frame_free", true, false), 
-		("AVFormatContext", null, "ffmpeg.avformat_free_context", false, false), 
-		("AVBufferSinkParams", "ffmpeg.av_buffersink_params_alloc", "ffmpeg.av_free", false, true), 
+		("AVPacket", "ffmpeg.av_packet_alloc", "ffmpeg.av_packet_unref", "ffmpeg.av_packet_free", true, false), 
+		("AVFrame", "ffmpeg.av_frame_alloc", "ffmpeg.av_frame_unref", "ffmpeg.av_frame_free", true, false), 
+		("AVFormatContext", null, null, "ffmpeg.avformat_free_context", false, false), 
+		("AVBufferSinkParams", "ffmpeg.av_buffersink_params_alloc", null, "ffmpeg.av_free", false, true), 
 	};
 #>
 
@@ -25,7 +25,7 @@ using System.Runtime.InteropServices;
 #pragma warning disable IDE0060
 
 <# foreach(var field in fields) { #>
-internal partial class Safe<#= field.type #> : SafeHandle
+public partial class Safe<#= field.type #> : SafeHandle
 {
 <# if(string.IsNullOrWhiteSpace(field.alloc)) { #>
 	public Safe<#= field.type #>(IntPtr handle): base(IntPtr.Zero, true) =>
@@ -47,12 +47,20 @@ internal partial class Safe<#= field.type #> : SafeHandle
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
+<# if(!string.IsNullOrWhiteSpace(field.unref)) { #>
+	/// <summary> <see cref="<#= field.unref #>"/> </summary>
+	public unsafe void Unref() => <#= field.unref #>(Pointer);
+<# } #>
+
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	unsafe protected override bool ReleaseHandle()
 	{
-		var ptr = (<#= field.type #> *)handle.ToPointer();
+		var ptr = Pointer;
 <# if(field.extrareleaselogic) { #>
 		ExtraReleaseHandleLogic(ptr);
+<# } #>
+<# if(!string.IsNullOrWhiteSpace(field.unref)) { #>
+		Unref();
 <# } #>
 		<#= field.free #>(<#= field.ptrfree ? "&" : "" #>ptr);
 		SetHandle(IntPtr.Zero);
@@ -70,9 +78,9 @@ internal partial class Safe<#= field.type #> : SafeHandle
 <# } #>
 
 // AVBufferSinkParams pixel format helper
-internal partial class SafeAVBufferSinkParams
+public partial class SafeAVBufferSinkParams
 {
-	private bool MyPixelFormatChange = false;
+	private bool MyPixelFormatChange;
 
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
 	public unsafe void ClearPixelFormats()
@@ -106,7 +114,7 @@ internal partial class SafeAVBufferSinkParams
 }
 
 // avdict safe wrapper
-internal class SafeAVDictionary : SafeHandle
+public class SafeAVDictionary : SafeHandle
 {
 	[ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
     unsafe public SafeAVDictionary() : base(IntPtr.Zero, true)

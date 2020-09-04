@@ -31,6 +31,7 @@ namespace ve.FFmpeg.Support
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "name matches ffmpeg library")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "name matches ffmpeg library")]
         public static unsafe string av_strerror(int error)
         {
             var bufferSize = 1024;
